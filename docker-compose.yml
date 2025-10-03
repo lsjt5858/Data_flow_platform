@@ -1,0 +1,85 @@
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.3.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:7.3.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+    ports:
+      - "9092:9092"
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.3.0
+    container_name: schema-registry
+    depends_on:
+      - kafka
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka:29092
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+    ports:
+      - "8081:8081"
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+    depends_on:
+      - kafka
+
+  flink-jobmanager:
+    image: flink:1.15.2
+    container_name: flink-jobmanager
+    entrypoint: ["/opt/flink/flink-entrypoint.sh"]
+    command: jobmanager
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: flink-jobmanager
+        jobmanager.rpc.port: 6123
+        state.checkpoints.dir: file:///opt/flink/checkpoints
+        state.savepoints.dir: file:///opt/flink/savepoints
+        classloader.resolve-order: parent-first
+        classloader.parent-first-patterns: "org.codehaus.commons.compiler,org.codehaus.janino"
+    ports:
+      - "8082:8081"  # Flink Web UI
+      - "6123:6123"
+    volumes:
+      - ./flink-lib:/opt/flink/usrlib
+      - ./flink-entrypoint.sh:/opt/flink/flink-entrypoint.sh
+      - ./checkpoints:/opt/flink/checkpoints
+      - ./savepoints:/opt/flink/savepoints
+
+  flink-taskmanager:
+    image: flink:1.15.2
+    container_name: flink-taskmanager
+    entrypoint: ["/opt/flink/flink-entrypoint.sh"]
+    command: taskmanager
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: flink-jobmanager
+        taskmanager.numberOfTaskSlots: 2
+        classloader.resolve-order: parent-first
+        classloader.parent-first-patterns: "org.codehaus.commons.compiler,org.codehaus.janino"
+    depends_on:
+      - flink-jobmanager
+    volumes:
+      - ./flink-lib:/opt/flink/usrlib
+      - ./flink-entrypoint.sh:/opt/flink/flink-entrypoint.sh
