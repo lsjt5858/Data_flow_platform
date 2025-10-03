@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker exec:*)",
+      "Bash(docker restart:*)",
+      "Bash(chmod:*)",
+      "Bash(./test-flink-sql.sh:*)",
+      "Bash(source:*)",
+      "Bash(python:*)",
+      "Bash(docker logs:*)",
+      "Bash(grep:*)",
+      "Bash(timeout 10 docker exec schema-registry kafka-avro-console-consumer --bootstrap-server kafka:29092 --topic avro-sink --from-beginning --max-messages 3 --property schema.registry.url=http://localhost:8081)",
+      "Bash(curl -s http://localhost:8082/jobs/1527704c2a9a8a40c66a1bddb75007fd)",
+      "Bash(python3:*)",
+      "Bash(curl:*)",
+      "Bash(timeout:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
