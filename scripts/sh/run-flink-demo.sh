@@ -6,8 +6,10 @@ echo ""
 
 # Step 1: 生成测试数据
 echo "📝 Step 1: 生成测试数据到 avro-topic..."
-source .venv/bin/activate
-python produce_avro.py
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+if [ -d "$ROOT_DIR/.venv" ]; then source "$ROOT_DIR/.venv/bin/activate"; fi
+python3 "$ROOT_DIR/scripts/python/produce_avro.py"
 echo ""
 
 # Step 2: 验证数据已写入
@@ -22,7 +24,7 @@ echo ""
 
 # Step 4: 运行Flink SQL作业
 echo "🚀 Step 4: 提交Flink SQL作业..."
-docker exec -i flink-jobmanager bash -c 'cat > /tmp/test.sql' < test-insert.sql
+docker exec -i flink-jobmanager bash -c 'cat > /tmp/test.sql' < "$ROOT_DIR/sql/avro/test-insert.sql"
 JOB_OUTPUT=$(docker exec flink-jobmanager /opt/flink/bin/sql-client.sh -f /tmp/test.sql 2>&1)
 JOB_ID=$(echo "$JOB_OUTPUT" | grep "Job ID:" | awk '{print $NF}')
 echo "Job ID: $JOB_ID"

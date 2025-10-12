@@ -2,8 +2,9 @@
 
 echo "🧪 测试 Flink SQL INSERT 操作（gateway 模式 + avro-confluent）..."
 
-# Copy SQL to container and execute
-docker exec -i flink-jobmanager bash -c 'cat > /tmp/test.sql' < test-insert.sql
+# Copy SQL to container and execute (path relative to this script)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+docker exec -i flink-jobmanager bash -c 'cat > /tmp/test.sql' < "$SCRIPT_DIR/../../sql/avro/test-insert.sql"
 docker exec flink-jobmanager /opt/flink/bin/sql-client.sh -f /tmp/test.sql
 
 echo ""
